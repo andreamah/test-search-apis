@@ -13,10 +13,27 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "test-new-search-apis.helloWorld",
-        "title": "Hello World"
-      }
+			{
+				"command": "memfs.workspaceInit",
+				"title": "Setup Workspace",
+				"category": "MemFS"
+			},
+			{
+				"command": "extension.testFindFiles2New",
+				"title": "Test FindFiles2 New"
+			},
+			{
+				"command": "extension.testFindTextInFilesNew",
+				"title": "Test FindTextInFiles New"
+			},
+			{
+				"command": "extension.testFindFiles2Old",
+				"title": "Test FindFiles2 Old"
+			},
+			{
+				"command": "extension.testFindTextInFilesOld",
+				"title": "Test FindTextInFiles Old"
+			}
     ]
   },
   "scripts": {
