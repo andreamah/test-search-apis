@@ -1,7 +1,12 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { MemFS, oldStyleSearchProvider } from './fileSystemProvider';
+import { MemFS } from './fileSystemProvider';
+import { newStyleSearchProvider } from './newStyleSearchProvider';
+import { oldStyleSearchProvider } from './oldStyleSearchProvider';
+
+
+const USE_NEW_PROVIDERS = true;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -12,12 +17,19 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "test-new-search-apis" is now active!');
 
 	const memFs = new MemFS();
-	const provider = new oldStyleSearchProvider(memFs.entries)
 	context.subscriptions.push(vscode.workspace.registerFileSystemProvider('memfs', memFs, { isCaseSensitive: true }));
-	context.subscriptions.push(vscode.workspace.registerFileSearchProvider('memfs', provider));
-	context.subscriptions.push(vscode.workspace.registerTextSearchProvider('memfs', provider));
+	if (USE_NEW_PROVIDERS) {
+		const provider = new newStyleSearchProvider(memFs.entries);
+		context.subscriptions.push(vscode.workspace.registerFileSearchProviderNew('memfs', provider));
+		context.subscriptions.push(vscode.workspace.registerTextSearchProviderNew('memfs', provider));
+	} else {
+		const provider = new oldStyleSearchProvider(memFs.entries);
+		context.subscriptions.push(vscode.workspace.registerFileSearchProvider('memfs', provider));
+		context.subscriptions.push(vscode.workspace.registerTextSearchProvider('memfs', provider));
+	}
+	
 	let initialized = false;
-	context.subscriptions.push(vscode.commands.registerCommand('memfs.workspaceInit', _ => {
+	context.subscriptions.push(vscode.commands.registerCommand('extension.workspaceInit', _ => {
 		vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('memfs:/'), name: "MemFS - Sample" });
 		if (initialized) {
 			return;
@@ -61,9 +73,11 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('extension.testFindTextInFilesOld', async (args) => {
 		console.log('testFindTextInFilesOld');
 		const pattern = await vscode.window.showInputBox({ prompt: 'Glob pattern' }) ?? '';
+		let count = 0;
 		const progress: vscode.Progress<vscode.TextSearchResult> = {
 			report(item) {
 				console.log(JSON.stringify(item));
+				count++;
 			}
 		};
 		const results = await vscode.workspace.findTextInFiles(
@@ -74,19 +88,24 @@ export function activate(context: vscode.ExtensionContext) {
 			},);
 
 		console.log(JSON.stringify(results));
+		console.log(`count: ${count}`);
 	});
 	
 	vscode.commands.registerCommand('extension.testFindTextInFilesNew', async (args) => {
 		console.log('testFindTextInFilesNew');
 		const pattern = await vscode.window.showInputBox({ prompt: 'Glob pattern' }) ?? '';
+		let count = 0;
 		const progress: vscode.Progress<vscode.TextSearchResultNew> = {
 			report(item) {
 				console.log(JSON.stringify(item));
+				count++;
 			}
 		};
 		const results =  vscode.workspace.findTextInFilesNew(
 			{ pattern }, 
 			{useExcludeSettings: vscode.ExcludeSettingOptions.FilesExclude,
+				// include:['**/*.txt', '**/*.ts'],
+				// exclude: ['**/UPPER.txt', '**/upper.txt'],
 			});
 		const asyncIt = results.results;
 
@@ -95,13 +114,15 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		console.log(await results.complete);
+		console.log(`count: ${count}`);
 	});
 
 	vscode.commands.registerCommand('extension.testFindFiles2Old', async (args) => {
 		console.log('testFindFiles2Old');
 		const glob = await vscode.window.showInputBox({ prompt: 'Glob pattern' }) ?? '';
-		const results = await vscode.workspace.findFiles(new vscode.RelativePattern(vscode.workspace.workspaceFolders![0], glob! ));
+		const results = await vscode.workspace.findFiles2(new vscode.RelativePattern(vscode.workspace.workspaceFolders![0], glob! ));
 		results.forEach(item =>console.log(item.toString()));
+		console.log(`results: ${results.length}`);
 	});
 
 	vscode.commands.registerCommand('extension.testFindFiles2New', async (args) => {
@@ -109,6 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const glob = await vscode.window.showInputBox({ prompt: 'Glob pattern' }) ?? '';
 		const results = await vscode.workspace.findFiles2New([new vscode.RelativePattern(vscode.workspace.workspaceFolders![0], glob! )]);
 		results.forEach(item =>console.log(item.toString()));
+		console.log(`results: ${results.length}`);
 	});
 }
 
