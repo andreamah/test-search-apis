@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const memFs = new MemFS();
 	context.subscriptions.push(vscode.workspace.registerFileSystemProvider('memfs', memFs, { isCaseSensitive: true }));
 	if (USE_NEW_PROVIDERS) {
-		const provider = new newStyleSearchProvider(memFs.entries);
+		const provider = new newStyleSearchProvider(memFs);
 		context.subscriptions.push(vscode.workspace.registerFileSearchProviderNew('memfs', provider));
 		context.subscriptions.push(vscode.workspace.registerTextSearchProviderNew('memfs', provider));
 	} else {
@@ -90,8 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(JSON.stringify(results));
 		console.log(`count: ${count}`);
 	});
-	
-	vscode.commands.registerCommand('extension.testFindTextInFilesNew', async (args) => {
+	vscode.commands.registerCommand('extension.testFindTextInFilesNewMultiIncludeExclude', async (args) => {
 		console.log('testFindTextInFilesNew');
 		const pattern = await vscode.window.showInputBox({ prompt: 'Glob pattern' }) ?? '';
 		let count = 0;
@@ -104,8 +103,32 @@ export function activate(context: vscode.ExtensionContext) {
 		const results =  vscode.workspace.findTextInFilesNew(
 			{ pattern }, 
 			{useExcludeSettings: vscode.ExcludeSettingOptions.FilesExclude,
-				// include:['**/*.txt', '**/*.ts'],
-				// exclude: ['**/UPPER.txt', '**/upper.txt'],
+				include:['**/test/**', '**/*.ts'],
+				exclude: ['**lru**', '**/binaryMap**'],
+			});
+		const asyncIt = results.results;
+
+		for await (const result of asyncIt) {
+			progress.report(result);
+		}
+
+		console.log(await results.complete);
+		console.log(`count: ${count}`);
+	});
+
+	vscode.commands.registerCommand('extension.testFindTextInFilesNew', async (args) => {
+		console.log('testFindTextInFilesNew');
+		const pattern = await vscode.window.showInputBox({ prompt: 'Glob pattern' }) ?? '';
+		let count = 0;
+		const progress: vscode.Progress<vscode.TextSearchResultNew> = {
+			report(item) {
+				console.log(JSON.stringify(item));
+				count++;
+			}
+		};
+		const results =  vscode.workspace.findTextInFilesNew(
+			{ pattern }, 
+			{useExcludeSettings: vscode.ExcludeSettingOptions.FilesExclude
 			});
 		const asyncIt = results.results;
 
@@ -125,10 +148,20 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(`results: ${results.length}`);
 	});
 
+	vscode.commands.registerCommand('extension.testFindFiles2NewMultiIncludeExclude', async (args) => {
+		console.log('testFindFiles2NewMultiIncludeExclude');
+		const include=['**/test/**', '**/*.ts'];
+		const exclude= ['**lru**', '**/binaryMap**'];
+		const results = await vscode.workspace.findFiles2New(include, { exclude});
+		results.forEach(item =>console.log(item.toString()));
+		console.log(`results: ${results.length}`);
+	});
+
+	
 	vscode.commands.registerCommand('extension.testFindFiles2New', async (args) => {
 		console.log('testFindFiles2New');
 		const glob = await vscode.window.showInputBox({ prompt: 'Glob pattern' }) ?? '';
-		const results = await vscode.workspace.findFiles2New([new vscode.RelativePattern(vscode.workspace.workspaceFolders![0], glob! )]);
+		const results = await vscode.workspace.findFiles2New([glob!]);
 		results.forEach(item =>console.log(item.toString()));
 		console.log(`results: ${results.length}`);
 	});

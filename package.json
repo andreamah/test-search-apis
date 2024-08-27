@@ -41,9 +41,18 @@
 				"command": "extension.testFindFiles2Old",
 				"title": "Test FindFiles2 Old"
 			},
+      
 			{
 				"command": "extension.testFindTextInFilesOld",
 				"title": "Test FindTextInFiles Old"
+			},
+			{
+				"command": "extension.testFindTextInFilesNewMultiIncludeExclude",
+				"title": "Test FindTextInFiles New Multi Include Exclude"
+			},
+			{
+				"command": "extension.testFindFiles2NewMultiIncludeExclude",
+				"title": "Test FindFiles2 New Multi Include Exclude"
 			}
     ]
   },
